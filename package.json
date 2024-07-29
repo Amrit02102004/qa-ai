@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/Amrit02102004/qa-ai#readme",
   "dependencies": {
+    "axios": "^1.7.2",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "nodemon": "^3.1.4"
