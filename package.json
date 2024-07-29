@@ -3,11 +3,13 @@
   "version": "1.0.0",
   "type": "module",
   "description": "A question answer with AI",
-  "main": "index.js",
   "scripts": {
+    "prestart": "clear",
     "start": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "main": "index.js",
+
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Amrit02102004/qa-ai.git"

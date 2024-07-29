@@ -4,7 +4,6 @@ dotenv.config();
 
 async function callGemini(prompts) {
     const apiKey = process.env.GEMINI_API_KEY;
-    console.log(apiKey);
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
 
     const headers = {
@@ -18,12 +17,11 @@ async function callGemini(prompts) {
                 .map(prompt => ({ text: prompt.content }))
         }]
     };
-
     try {
         const response = await axios.post(url, payload, { headers });
         console.log("Response JSON:", response.data);
         if (response.status === 200) {
-            return response.data.candidates[0].content.parts[0].text;
+            return response.data;  // Return the full response data
         } else {
             return `Error: ${response.status} - ${response.statusText}`;
         }

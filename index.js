@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import generatePrompts from './prompts.js';
 import bodyParser from 'body-parser';
 import callGemini from './gemini.js'
-
+import formatResponse from './responseformatter.js';
 const app = express();
 app.use(bodyParser.json());
 const PORT = process.env.PORT || 3000;
@@ -13,15 +13,37 @@ app.get('/', (req, res) => {
     res.send('Hello World');
     }
 );
-
 app.post('/api/generate-prompts', async (req, res) => {
     const { personality, providedText } = req.body;
     const prompts = generatePrompts(personality, providedText);
     try {
-        const generatedContent = await callGemini(prompts);
-        res.json({ generatedContent });
+        const apiResponse = await callGemini(prompts);
+        console.log("API Response:", JSON.stringify(apiResponse, null, 2));
+        
+        // Extract the generated content from the API response
+        let generatedContent;
+        if (apiResponse.candidates && 
+            apiResponse.candidates[0] && 
+            apiResponse.candidates[0].content &&
+            apiResponse.candidates[0].content.parts &&
+            apiResponse.candidates[0].content.parts[0] &&
+            apiResponse.candidates[0].content.parts[0].text) {
+            generatedContent = apiResponse.candidates[0].content.parts[0].text;
+        }
+        
+        if (!generatedContent) {
+            throw new Error('Unable to extract generated content from API response');
+        }
+        
+        const formattedContent = formatResponse(generatedContent);
+        if (formattedContent.error) {
+            res.status(500).json(formattedContent);
+        } else {
+            res.json(formattedContent);
+        }
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error("Error in generate-prompts route:", error);
+        res.status(500).json({ error: "Internal server error", message: error.message });
     }
 });
 
