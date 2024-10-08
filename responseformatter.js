@@ -1,8 +1,11 @@
 function formatResponse(apiResponse) {
   try {
-    // Extract the JSON string from the API response
-    const jsonString = apiResponse.parts[0].text;
-    
+    // Extract the text content from the API response
+    let jsonString = apiResponse.parts[0].text;
+
+    // Remove markdown code block syntax if present
+    jsonString = jsonString.replace(/^```json\n|\n```$/g, '');
+
     // Parse the JSON string
     const parsedResponse = JSON.parse(jsonString);
 
@@ -18,7 +21,7 @@ function formatResponse(apiResponse) {
         title: section.title,
         content: Array.isArray(section.content) 
           ? section.content.map(item => item.trim())
-          : section.content.trim().split('\n\n').map(paragraph => paragraph.trim())
+          : section.content.trim().split('\n').map(paragraph => paragraph.trim()).filter(Boolean)
       }))
     };
 

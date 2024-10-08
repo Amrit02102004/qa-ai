@@ -2,6 +2,9 @@ POST http://localhost:3000/api/generate-prompts
 Content-Type: application/json
 
 {
-    "personality" : "alex",
-    "providedText" : "Photosynthesis"
+    "personality" : "bob",
+    "providedText" : "Osmosis"
 }
+
+###!SECTION
+GET http://localhost:3000/
