@@ -1,31 +1,25 @@
 function formatResponse(apiResponse) {
   try {
-    // The apiResponse is now directly the text content
-    const generatedContent = apiResponse;
+    // Extract the JSON string from the API response
+    const jsonString = apiResponse.parts[0].text;
+    
+    // Parse the JSON string
+    const parsedResponse = JSON.parse(jsonString);
 
-    if (!generatedContent) {
-      throw new Error('Unable to extract generated content from API response');
+    // Validate the structure
+    if (!parsedResponse.title || !Array.isArray(parsedResponse.sections)) {
+      throw new Error('Invalid response structure');
     }
 
-    // Split the content into sections
-    const sections = generatedContent.split(/(?=##?\s)/);
-
-    // Extract the main title
-    const mainTitle = sections.shift().replace(/^#\s*/, '').trim();
-
-    // Format each section
-    const formattedSections = sections.map(section => {
-      const [title, ...contentParts] = section.split('\n');
-      return {
-        title: title.replace(/^##\s*/, '').trim(),
-        content: contentParts.join('\n').trim().split('\n\n').map(paragraph => paragraph.trim())
-      };
-    });
-
-    // Construct the final formatted response
+    // Format the response
     const formattedResponse = {
-      title: mainTitle,
-      sections: formattedSections
+      title: parsedResponse.title,
+      sections: parsedResponse.sections.map(section => ({
+        title: section.title,
+        content: Array.isArray(section.content) 
+          ? section.content.map(item => item.trim())
+          : section.content.trim().split('\n\n').map(paragraph => paragraph.trim())
+      }))
     };
 
     return formattedResponse;
@@ -34,7 +28,7 @@ function formatResponse(apiResponse) {
     return { 
       error: 'Failed to format response', 
       message: error.message,
-      originalContent: apiResponse 
+      originalContent: apiResponse
     };
   }
 }

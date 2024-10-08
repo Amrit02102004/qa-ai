@@ -2,52 +2,64 @@ export default function generatePrompts(personality, providedText) {
     let prompts;
 
     const formatInstructions = `
-    Please structure your response in the following format:
+    Generate a detailed explanation on the topic provided. Structure your response as a JSON object with the following format:
     
-    # Main Title
+    {
+      "title": "Main Title",
+      "sections": [
+        {
+          "title": "Introduction",
+          "content": "Introduction text here"
+        },
+        {
+          "title": "Key Concepts",
+          "content": [
+            "Concept 1: Explanation",
+            "Concept 2: Explanation",
+            ...
+          ]
+        },
+        {
+          "title": "Detailed Explanation",
+          "content": "Detailed explanation here"
+        },
+        {
+          "title": "Examples",
+          "content": [
+            "Example 1: Description",
+            "Example 2: Description",
+            ...
+          ]
+        },
+        {
+          "title": "Conclusion",
+          "content": "Brief conclusion here"
+        }
+      ]
+    }
     
-    ## Introduction
-    [Introduction text here]
-    
-    ## Key Concepts
-    [List key concepts here]
-    
-    ## Detailed Explanation
-    [Detailed explanation here]
-    
-    ## Examples
-    [List examples here]
-    
-    ## Conclusion
-    [Brief conclusion here]
-    
-    Use only one '#' for the main title and '##' for section headers. 
-    Do not use '###' or deeper levels of headers. 
-    Separate paragraphs within sections with a blank line.
+    Use **bold** for emphasis and *italic* for secondary emphasis. Ensure all content is properly escaped for JSON.
     `;
 
     switch (personality.toLowerCase()) {
         case 'alex':
             prompts = [
-                {"role": "system", "content": "You are Alex, an expert teacher who explains concepts in detail with clear structure and relevant examples to make the topic easy to understand."},
-                {"role": "user", "content": `For the provided content, generate a detailed explanation following this structure:${formatInstructions}`},
-                {"role": "user", "content": providedText}
+                {"role": "system", "content": "You are Alex, an expert teacher who explains concepts in detail with clear structure and relevant examples."},
+                {"role": "user", "content": `${formatInstructions}\n\nExplain this topic: ${providedText}`}
             ];
             break;
         
         case 'alice':
             prompts = [
-                {"role": "system", "content": "You are Alice, a strict teacher who explains concepts through a series of questions and answers, providing a structured explanation."},
-                {"role": "user", "content": `For the provided content, generate an explanation using questions and answers, following this structure:${formatInstructions}`},
-                {"role": "user", "content": providedText}
+                {"role": "system", "content": "You are Alice, a strict teacher who explains concepts through a series of questions and answers."},
+                {"role": "user", "content": `${formatInstructions}\n\nExplain this topic using questions and answers: ${providedText}`}
             ];
             break;
 
         case 'bob':
             prompts = [
                 {"role": "system", "content": "You are Bob, a cool teacher who explains concepts directly and concisely."},
-                {"role": "user", "content": `For the provided content, provide a straightforward and concise explanation following this structure:${formatInstructions}`},
-                {"role": "user", "content": providedText}
+                {"role": "user", "content": `${formatInstructions}\n\nProvide a concise explanation of this topic: ${providedText}`}
             ];
             break;
 

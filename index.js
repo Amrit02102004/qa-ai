@@ -20,22 +20,8 @@ app.post('/api/generate-prompts', async (req, res) => {
         const apiResponse = await callGemini(prompts);
         console.log("API Response:", JSON.stringify(apiResponse, null, 2));
         
-        // Extract the generated content from the API response
-        let generatedContent;
-        if (apiResponse.candidates && 
-            apiResponse.candidates[0] && 
-            apiResponse.candidates[0].content &&
-            apiResponse.candidates[0].content.parts &&
-            apiResponse.candidates[0].content.parts[0] &&
-            apiResponse.candidates[0].content.parts[0].text) {
-            generatedContent = apiResponse.candidates[0].content.parts[0].text;
-        }
+        const formattedContent = formatResponse(apiResponse);
         
-        if (!generatedContent) {
-            throw new Error('Unable to extract generated content from API response');
-        }
-        
-        const formattedContent = formatResponse(generatedContent);
         if (formattedContent.error) {
             res.status(500).json(formattedContent);
         } else {
