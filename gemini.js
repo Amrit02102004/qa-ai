@@ -2,7 +2,7 @@ import axios from 'axios';
 import dotenv from 'dotenv';
 dotenv.config();
 
-async function callGemini(prompts, retries = 3) {
+async function callGemini(prompts) {
     const apiKey = process.env.GEMINI_API_KEY;
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
 
@@ -30,36 +30,20 @@ async function callGemini(prompts, retries = 3) {
         }
     };
 
-    for (let attempt = 1; attempt <= retries; attempt++) {
-        try {
-            const response = await axios.post(url, payload, { headers });
-            console.log("Response Status:", response.status);
-            console.log("Response Data:", JSON.stringify(response.data, null, 2));
-            
-            if (response.status === 200) {
-                if (response.data.candidates && response.data.candidates[0] && response.data.candidates[0].content) {
-                    return response.data.candidates[0].content;
-                } else {
-                    throw new Error("No content in API response");
-                }
-            } else {
-                console.warn(`Unexpected status code: ${response.status}`);
-            }
-        } catch (error) {
-            console.error(`Attempt ${attempt} failed:`, error.message);
-            
-            if (error.response) {
-                console.error("Response status:", error.response.status);
-                console.error("Response data:", error.response.data);
-            }
-
-            if (attempt === retries) {
-                throw error;
-            }
-
-            // Wait before retrying (exponential backoff)
-            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)));
+    try {
+        const response = await axios.post(url, payload, { 
+            headers,
+            // timeout: 20000 // Set a 9-second timeout
+        });
+        
+        if (response.status === 200 && response.data.candidates && response.data.candidates[0] && response.data.candidates[0].content) {
+            return response.data.candidates[0].content;
+        } else {
+            throw new Error("No content in API response");
         }
+    } catch (error) {
+        console.error("API request failed:", error.message);
+        throw error;
     }
 }
 
