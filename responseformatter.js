@@ -1,20 +1,14 @@
 function formatResponse(apiResponse) {
   try {
-    // Extract the text content from the API response
     let jsonString = apiResponse.parts[0].text;
 
-    // Remove markdown code block syntax if present
     jsonString = jsonString.replace(/^```json\n|\n```$/g, '');
 
-    // Parse the JSON string
     const parsedResponse = JSON.parse(jsonString);
 
-    // Validate the structure
     if (!parsedResponse.title || !Array.isArray(parsedResponse.sections)) {
       throw new Error('Invalid response structure');
     }
-
-    // Format the response
     const formattedResponse = {
       title: parsedResponse.title,
       sections: parsedResponse.sections.map(section => ({
