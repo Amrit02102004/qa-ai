@@ -4,6 +4,7 @@ import bodyParser from 'body-parser';
 import { generateInitialPrompt, generateFollowUpPrompt } from './prompts.js';
 import callGemini from './gemini.js';
 import formatResponse from './responseformatter.js';
+import ConversationManager from './conversationManager.js';
 
 // Initialize environment variables and express
 dotenv.config();
@@ -11,8 +12,8 @@ const app = express();
 app.use(bodyParser.json());
 const PORT = process.env.PORT || 3000;
 
-// Store conversation contexts (in production, use a proper database)
-const conversationContexts = new Map();
+// Initialize conversation manager
+const conversationManager = new ConversationManager();
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -45,12 +46,22 @@ app.post('/api/generate-prompts', async (req, res) => {
             return res.status(500).json(formattedContent);
         }
 
-        // Generate and store conversation ID
+        // Generate conversation ID and store context
         const conversationId = Date.now().toString();
-        conversationContexts.set(conversationId, {
-            personality,
-            lastResponse: apiResponse,
-            timestamp: new Date()
+        
+        conversationManager.createConversation(conversationId, personality);
+        
+        // Store the initial interaction
+        conversationManager.addToHistory(conversationId, {
+            type: 'user',
+            content: providedText,
+            role: 'user'
+        });
+        
+        conversationManager.addToHistory(conversationId, {
+            type: 'assistant',
+            content: apiResponse.parts[0].text,
+            role: 'assistant'
         });
 
         // Send response with conversation ID
@@ -81,18 +92,19 @@ app.post('/api/follow-up', async (req, res) => {
 
     try {
         // Get conversation context
-        const context = conversationContexts.get(conversationId);
-        if (!context) {
+        const conversation = conversationManager.getConversation(conversationId);
+        
+        if (!conversation) {
             return res.status(404).json({ 
                 error: 'Conversation not found', 
                 message: 'The specified conversation ID does not exist' 
             });
         }
 
-        // Generate follow-up prompts
+        // Generate follow-up prompts with full history
         const prompts = generateFollowUpPrompt(
-            context.personality,
-            context.lastResponse,
+            conversation.personality,
+            conversation.history,
             followUpQuestion
         );
 
@@ -107,10 +119,18 @@ app.post('/api/follow-up', async (req, res) => {
             return res.status(500).json(formattedContent);
         }
 
-        // Update conversation context
-        context.lastResponse = apiResponse;
-        context.timestamp = new Date();
-        conversationContexts.set(conversationId, context);
+        // Update conversation history
+        conversationManager.addToHistory(conversationId, {
+            type: 'user',
+            content: followUpQuestion,
+            role: 'user'
+        });
+        
+        conversationManager.addToHistory(conversationId, {
+            type: 'assistant',
+            content: apiResponse.parts[0].text,
+            role: 'assistant'
+        });
 
         // Send response
         res.json({
@@ -127,14 +147,29 @@ app.post('/api/follow-up', async (req, res) => {
     }
 });
 
+// Get conversation history endpoint
+app.get('/api/conversation/:conversationId', (req, res) => {
+    const { conversationId } = req.params;
+    
+    const conversation = conversationManager.getConversation(conversationId);
+    
+    if (!conversation) {
+        return res.status(404).json({
+            error: 'Conversation not found',
+            message: 'The specified conversation ID does not exist'
+        });
+    }
+
+    res.json({
+        conversationId,
+        personality: conversation.personality,
+        history: conversation.history
+    });
+});
+
 // Cleanup old conversations periodically (run every hour)
 setInterval(() => {
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    for (const [id, context] of conversationContexts.entries()) {
-        if (context.timestamp < oneHourAgo) {
-            conversationContexts.delete(id);
-        }
-    }
+    conversationManager.cleanupOldConversations();
 }, 60 * 60 * 1000);
 
 // Start server

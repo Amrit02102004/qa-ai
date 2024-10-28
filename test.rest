@@ -5,53 +5,69 @@
 ### Health Check
 GET {{baseUrl}}/health
 
-### Generate Initial Prompt with Alex
+### Initial Conversations
+
+### Generate Initial Conversation with Alex (Teacher)
 POST {{baseUrl}}/api/generate-prompts
 Content-Type: {{contentType}}
 
 {
     "personality": "alex",
-    "providedText": "Osmosis in Plants"
+    "providedText": "Explain how neural networks work"
 }
 
-### Generate Initial Prompt with Alice
+### Generate Initial Conversation with Alice (Socratic Guide)
 POST {{baseUrl}}/api/generate-prompts
 Content-Type: {{contentType}}
 
 {
     "personality": "alice",
-    "providedText": "Explain how photosynthesis works"
+    "providedText": "What makes a sorting algorithm efficient?"
 }
 
-### Generate Initial Prompt with Bob
+### Generate Initial Conversation with Bob (Practical Mentor)
 POST {{baseUrl}}/api/generate-prompts
 Content-Type: {{contentType}}
 
 {
     "personality": "bob",
-    "providedText": "Explain how to optimize website performance"
+    "providedText": "Best practices for React component design"
 }
 
-### Follow-up Question (replace {conversationId} with actual ID from initial response)
+### Follow-up Interactions
+
+### Follow-up Question with Context
 POST {{baseUrl}}/api/follow-up
 Content-Type: {{contentType}}
 
 {
-    "conversationId": "1730097976857",
-    "followUpQuestion": "What did I ask you to do?"
+    "conversationId": "1730099159304",
+    "followUpQuestion": "Tell me what did I ask you about?"
 }
 
-### Error Tests
+### View Conversation History
+GET {{baseUrl}}/api/conversation/1234567890123
 
-### Missing Personality
+### Error Test Cases
+
+### Invalid Personality Test
 POST {{baseUrl}}/api/generate-prompts
 Content-Type: {{contentType}}
 
 {
-    "providedText": "Explain something"
+    "personality": "dave",
+    "providedText": "Explain quantum computing"
 }
 
-### Missing Provided Text
+### Missing Required Fields Test - No Personality
+POST {{baseUrl}}/api/generate-prompts
+Content-Type: {{contentType}}
+
+{
+    "providedText": "Explain blockchain"
+}
+
+### Missing Required Fields Test - No Text
 POST {{baseUrl}}/api/generate-prompts
 Content-Type: {{contentType}}
 
@@ -59,28 +75,30 @@ Content-Type: {{contentType}}
     "personality": "alex"
 }
 
-### Invalid Personality
-POST {{baseUrl}}/api/generate-prompts
-Content-Type: {{contentType}}
-
-{
-    "personality": "invalid",
-    "providedText": "Explain something"
-}
-
-### Missing Conversation ID
+### Invalid Follow-up - Missing Conversation ID
 POST {{baseUrl}}/api/follow-up
 Content-Type: {{contentType}}
 
 {
-    "followUpQuestion": "Can you explain more?"
+    "followUpQuestion": "Can you elaborate on that point?"
 }
 
-### Invalid Conversation ID
+### Invalid Follow-up - Missing Question
 POST {{baseUrl}}/api/follow-up
 Content-Type: {{contentType}}
 
 {
-    "conversationId": "invalid_id",
-    "followUpQuestion": "Can you explain more?"
+    "conversationId": "1234567890123"
 }
+
+### Invalid Follow-up - Non-existent Conversation
+POST {{baseUrl}}/api/follow-up
+Content-Type: {{contentType}}
+
+{
+    "conversationId": "nonexistent",
+    "followUpQuestion": "Can you explain that again?"
+}
+
+### Invalid Conversation History Request
+GET {{baseUrl}}/api/conversation/nonexistent
