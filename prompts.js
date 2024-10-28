@@ -1,4 +1,4 @@
-  // Define personality traits and conversation styles
+
   const personalityTraits = {
   alex: {
       name: "Alex",
@@ -49,8 +49,6 @@
       }
   }
   };
-
-  // Generate initial conversation prompt
   function generateInitialPrompt(personality, topic) {
   const traits = personalityTraits[personality.toLowerCase()];
 
@@ -75,7 +73,6 @@
   return [systemPrompt, userPrompt];
   }
 
-  // Generate follow-up conversation prompt
   function generateFollowUpPrompt(personality, history, followUpQuestion) {
   const traits = personalityTraits[personality.toLowerCase()];
 
@@ -83,7 +80,6 @@
       throw new Error("Invalid personality selected");
   }
 
-  // Create a comprehensive context from history
   const conversationContext = history.map(entry => ({
       role: entry.role,
       content: entry.content
@@ -98,13 +94,10 @@
       For questions about previous conversation, respond naturally while maintaining your personality.`
   };
 
-  // Add the new follow-up question
   const userPrompt = {
       role: "user",
       content: followUpQuestion
   };
-
-  // Return all prompts in chronological order
   return [
       systemPrompt,
       ...conversationContext,
@@ -112,53 +105,115 @@
   ];
   }
 
-  // Helper function to generate format-specific prompts
   function generateFormatPrompt(traits, topic) {
-  const basePrompt = `Please explain "${topic}" in your teaching style. `;
-
-  switch (traits.responseFormat.type) {
+    const basePrompt = `Explain "${topic}" in your teaching style. Your response MUST be a valid JSON object. Do not include any text outside the JSON structure. Format your entire response as a single JSON object like this example:
+  
+  {
+      "title": "Topic Explanation",
+      "sections": [
+          {
+              "heading": "Introduction",
+              "content": ["Main introduction text here"]
+          },
+          {
+              "heading": "Key Concepts",
+              "content": ["Point 1", "Point 2", "Point 3"]
+          }
+      ]
+  }`;
+  
+    switch (traits.responseFormat.type) {
       case "detailed_explanation":
-          return basePrompt + `
-              Provide a comprehensive explanation in this JSON format:
-              {
-                  "title": "Understanding ${topic}",
-                  "theoreticalFoundation": "Explain core theoretical concepts",
-                  "detailedAnalysis": "Break down each component",
-                  "practicalApplications": "Provide real-world examples",
-                  "commonMisconceptions": "Address potential confusion points",
-                  "nextSteps": "Suggest areas for deeper learning"
-              }`;
-
+        return basePrompt + `
+            Structure your JSON response with these sections:
+            {
+                "title": "Understanding ${topic}",
+                "sections": [
+                    {
+                        "heading": "Theoretical Foundation",
+                        "content": ["Core theoretical concepts"]
+                    },
+                    {
+                        "heading": "Detailed Analysis",
+                        "content": ["Component breakdowns"]
+                    },
+                    {
+                        "heading": "Practical Applications",
+                        "content": ["Real-world examples"]
+                    },
+                    {
+                        "heading": "Common Misconceptions",
+                        "content": ["Potential confusion points"]
+                    },
+                    {
+                        "heading": "Next Steps",
+                        "content": ["Areas for deeper learning"]
+                    }
+                ]
+            }`;
+  
       case "socratic_dialogue":
-          return basePrompt + `
-              Guide the understanding through questions in this JSON format:
-              {
-                  "mainQuestion": "Pose the central question about ${topic}",
-                  "guidingQuestions": ["Array of follow-up questions"],
-                  "conceptChecks": ["Questions to verify understanding"],
-                  "challengeScenarios": ["Questions about edge cases"],
-                  "synthesisProblem": "Final question to tie everything together",
-                  "context": "Brief explanation of why these questions matter"
-              }`;
-
+        return basePrompt + `
+            Structure your JSON response with these sections:
+            {
+                "title": "Understanding ${topic}",
+                "sections": [
+                    {
+                        "heading": "Main Question",
+                        "content": ["Central question about the topic"]
+                    },
+                    {
+                        "heading": "Guiding Questions",
+                        "content": ["Follow-up question 1", "Follow-up question 2"]
+                    },
+                    {
+                        "heading": "Concept Checks",
+                        "content": ["Verification question 1", "Verification question 2"]
+                    },
+                    {
+                        "heading": "Challenge Scenarios",
+                        "content": ["Edge case 1", "Edge case 2"]
+                    },
+                    {
+                        "heading": "Synthesis",
+                        "content": ["Final connecting question"]
+                    }
+                ]
+            }`;
+  
       case "concise_practical":
-          return basePrompt + `
-              Explain directly and practically in this JSON format:
-              {
-                  "summary": "Quick, clear explanation",
-                  "keyPoints": ["Most important points to remember"],
-                  "practicalTips": ["Actionable advice"],
-                  "warnings": ["Common pitfalls to avoid"],
-                  "quickGuide": "Easy reference summary",
-                  "realWorldUse": "How to apply this knowledge"
-              }`;
-
+        return basePrompt + `
+            Structure your JSON response with these sections:
+            {
+                "title": "Understanding ${topic}",
+                "sections": [
+                    {
+                        "heading": "Quick Summary",
+                        "content": ["Brief explanation"]
+                    },
+                    {
+                        "heading": "Key Points",
+                        "content": ["Point 1", "Point 2", "Point 3"]
+                    },
+                    {
+                        "heading": "Practical Tips",
+                        "content": ["Tip 1", "Tip 2", "Tip 3"]
+                    },
+                    {
+                        "heading": "Common Pitfalls",
+                        "content": ["Warning 1", "Warning 2"]
+                    },
+                    {
+                        "heading": "Quick Reference",
+                        "content": ["Easy reference summary"]
+                    }
+                ]
+            }`;
+  
       default:
-          throw new Error("Invalid response format type");
+        throw new Error("Invalid response format type");
+    }
   }
-  }
-
-  // Export functions for use in the main application
   export { 
   generateInitialPrompt, 
   generateFollowUpPrompt,

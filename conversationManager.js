@@ -1,4 +1,3 @@
-// conversationManager.js
 
 class ConversationManager {
     constructor() {

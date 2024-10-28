@@ -41,12 +41,12 @@ POST {{baseUrl}}/api/follow-up
 Content-Type: {{contentType}}
 
 {
-    "conversationId": "1730099159304",
-    "followUpQuestion": "Tell me what did I ask you about?"
+    "conversationId": "1730100626537",
+    "followUpQuestion": "Explain the 2 pitfall u gave in Common Pitfalls in the previos response."
 }
 
 ### View Conversation History
-GET {{baseUrl}}/api/conversation/1234567890123
+GET {{baseUrl}}/api/conversation/1730100542955
 
 ### Error Test Cases
 

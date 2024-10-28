@@ -1,182 +1,133 @@
 function formatResponse(apiResponse) {
   try {
-    // Get the text content from the response
-    let jsonString = apiResponse.parts[0].text;
-
-    // Clean up the JSON string
-    jsonString = cleanJsonString(jsonString);
-
-    // Parse the JSON content
-    let parsedResponse = parseJsonSafely(jsonString);
+    let responseText = apiResponse.parts[0].text;
     
-    // Transform the response into a flat structure
-    return flattenResponse(parsedResponse);
+    try {
+      const cleanedJson = cleanJsonString(responseText);
+      const parsedJson = JSON.parse(cleanedJson);
+      return transformToStandardFormat(parsedJson);
+    } catch (jsonError) {
+      
+      return convertMarkdownToStructured(responseText);
+    }
   } catch (error) {
     console.warn('Warning in format response:', error);
-    return createStructuredResponse(apiResponse.parts[0].text);
+    return {
+      title: "Error Processing Response",
+      sections: [{
+        heading: "Content",
+        content: ["An error occurred while processing the response."]
+      }]
+    };
   }
 }
 
-function cleanJsonString(jsonString) {
-  // Remove any markdown code block indicators
-  jsonString = jsonString.replace(/^```json\s*|```\s*$/g, '').trim();
+function convertMarkdownToStructured(text) {
+  text = text.replace(/```[a-z]*\n/g, '').replace(/```/g, '');
   
-  // If the string starts with [ and contains JSON-like content, clean it up
-  if (jsonString.startsWith('[') && jsonString.includes('{')) {
-    // Remove array notation and join the strings
-    jsonString = jsonString
-      .replace(/^\[|\]$/g, '') // Remove outer array brackets
-      .split('","')  // Split into array
-      .join('')      // Join back together
-      .replace(/\\"/g, '"')  // Fix escaped quotes
-      .replace(/^"|"$/g, '') // Remove outer quotes
-      .trim();
-  }
-
-  return jsonString;
-}
-
-function parseJsonSafely(jsonString) {
-  try {
-    return JSON.parse(jsonString);
-  } catch (firstError) {
-    try {
-      // Try to find and parse just the JSON object if full parse fails
-      const match = jsonString.match(/\{[\s\S]*\}/);
-      if (match) {
-        return JSON.parse(match[0]);
-      }
-    } catch (secondError) {
-      console.warn('Failed to parse JSON:', secondError);
-    }
-    throw firstError;
-  }
-}
-
-function convertToReadableString(item, indent = '') {
-  if (item === null || item === undefined) {
-    return 'N/A';
-  }
-
-  if (typeof item === 'string') {
-    return item.trim();
-  }
-
-  if (typeof item === 'number' || typeof item === 'boolean') {
-    return item.toString();
-  }
-
-  if (Array.isArray(item)) {
-    if (item.length === 0) return '';
-    
-    return item.map(subItem => {
-      const converted = convertToReadableString(subItem, indent + '  ');
-      if (!converted) return '';
-      const lines = converted.split('\n');
-      return lines.map(line => `${indent}- ${line.trim()}`).join('\n');
-    }).filter(Boolean).join('\n');
-  }
-
-  if (typeof item === 'object') {
-    const entries = Object.entries(item);
-    if (entries.length === 0) return '';
-
-    return entries.map(([key, value]) => {
-      if (!value) return '';
-      const formattedKey = formatTitle(key);
-      const converted = convertToReadableString(value, indent + '  ');
-      
-      if (!converted) return '';
-      if (converted.includes('\n')) {
-        return `${indent}${formattedKey}:\n${converted}`;
-      }
-      return `${indent}${formattedKey}: ${converted}`;
-    }).filter(Boolean).join('\n');
-  }
-
-  return String(item);
-}
-
-function flattenResponse(parsed) {
   const sections = [];
+  let currentSection = {
+    heading: "Overview",
+    content: []
+  };
   
-  // Add title section if it exists
-  if (parsed.title) {
+  const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
+  
+  for (const line of lines) {
+    if (line.startsWith('#') || (line.startsWith('**') && line.endsWith('**'))) {
+      if (currentSection.content.length > 0) {
+        sections.push({ ...currentSection });
+      }
+      
+      const heading = line.replace(/^#+\s*|^\*\*|\*\*$/g, '').trim();
+      currentSection = {
+        heading: heading,
+        content: []
+      };
+    } else {
+      let content = line;
+      if (line.startsWith('* ') || /^\d+\.\s/.test(line)) {
+        content = line.replace(/^\*\s*|^\d+\.\s*/, '').trim();
+      }
+      
+      if (content) {
+        currentSection.content.push(content);
+      }
+    }
+  }
+  
+  if (currentSection.content.length > 0) {
+    sections.push(currentSection);
+  }
+  
+  if (sections.length === 0 && text.trim()) {
     sections.push({
-      title: "Overview",
-      content: [parsed.title]
+      heading: "Content",
+      content: [text.trim()]
     });
   }
+  
+  return {
+    title: sections[0]?.heading || "Response",
+    sections: sections
+  };
+}
 
-  // Process each top-level key
+function transformToStandardFormat(parsed) {
+  if (parsed.title && Array.isArray(parsed.sections)) {
+    return parsed;
+  }
+  
+  const sections = [];
+  
   for (const [key, value] of Object.entries(parsed)) {
-    if (key === 'title') continue; // Skip title as it's already processed
-
+    if (key === 'title') continue;
+    
     let content = [];
     
-    if (typeof value === 'string') {
-      // Handle string values
-      content = value.split('\n')
-        .map(line => line.trim())
-        .filter(Boolean);
-    } else if (Array.isArray(value)) {
-      // Handle arrays
-      const formattedContent = convertToReadableString(value)
-        .split('\n')
-        .filter(Boolean);
-      content.push(...formattedContent);
+    if (Array.isArray(value)) {
+      content = value.map(item => 
+        typeof item === 'string' ? item : JSON.stringify(item)
+      );
     } else if (typeof value === 'object' && value !== null) {
-      // Handle objects
-      const formattedContent = convertToReadableString(value)
-        .split('\n')
-        .filter(Boolean);
-      content.push(...formattedContent);
+      content = [JSON.stringify(value, null, 2)];
     } else if (value != null) {
-      // Handle primitive values
       content = [value.toString()];
     }
-
-    // Only add section if it has content
+    
     if (content.length > 0) {
       sections.push({
-        title: formatTitle(key),
-        content: content
+        heading: formatTitle(key),
+        content: content.filter(item => item && item.trim().length > 0)
       });
     }
   }
-
+  
   return {
     title: parsed.title || "Response",
     sections: sections.filter(section => 
       section.content && 
-      section.content.length > 0 && 
-      section.content.some(item => item.trim().length > 0)
+      section.content.length > 0
     )
-  };
-}
-
-function createStructuredResponse(text) {
-  const paragraphs = text
-    .split('\n')
-    .map(p => p.trim())
-    .filter(Boolean);
-
-  return {
-    title: "Response",
-    sections: [{
-      title: "Content",
-      content: paragraphs
-    }]
   };
 }
 
 function formatTitle(key) {
   return key
-    .replace(/([A-Z])/g, ' $1') // Split camelCase
-    .replace(/_/g, ' ') // Replace underscores with spaces
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/_/g, ' ')
     .split(' ')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ')
+    .trim();
+}
+
+function cleanJsonString(jsonString) {
+  return jsonString
+    .replace(/^```json\s*|```\s*$/g, '')
+    .replace(/^\[|\]$/g, '')
+    .replace(/\\"/g, '"')
+    .replace(/^"|"$/g, '')
     .trim();
 }
 
