@@ -1,10 +1,86 @@
-POST http://localhost:3000/api/generate-prompts
-Content-Type: application/json
+### Variables
+@baseUrl = http://localhost:3000
+@contentType = application/json
+
+### Health Check
+GET {{baseUrl}}/health
+
+### Generate Initial Prompt with Alex
+POST {{baseUrl}}/api/generate-prompts
+Content-Type: {{contentType}}
 
 {
-    "personality" : "bob",
-    "providedText" : "Osmosis"
+    "personality": "alex",
+    "providedText": "Osmosis in Plants"
 }
 
-###!SECTION
-GET http://localhost:3000/
+### Generate Initial Prompt with Alice
+POST {{baseUrl}}/api/generate-prompts
+Content-Type: {{contentType}}
+
+{
+    "personality": "alice",
+    "providedText": "Explain how photosynthesis works"
+}
+
+### Generate Initial Prompt with Bob
+POST {{baseUrl}}/api/generate-prompts
+Content-Type: {{contentType}}
+
+{
+    "personality": "bob",
+    "providedText": "Explain how to optimize website performance"
+}
+
+### Follow-up Question (replace {conversationId} with actual ID from initial response)
+POST {{baseUrl}}/api/follow-up
+Content-Type: {{contentType}}
+
+{
+    "conversationId": "1730097976857",
+    "followUpQuestion": "What did I ask you to do?"
+}
+
+### Error Tests
+
+### Missing Personality
+POST {{baseUrl}}/api/generate-prompts
+Content-Type: {{contentType}}
+
+{
+    "providedText": "Explain something"
+}
+
+### Missing Provided Text
+POST {{baseUrl}}/api/generate-prompts
+Content-Type: {{contentType}}
+
+{
+    "personality": "alex"
+}
+
+### Invalid Personality
+POST {{baseUrl}}/api/generate-prompts
+Content-Type: {{contentType}}
+
+{
+    "personality": "invalid",
+    "providedText": "Explain something"
+}
+
+### Missing Conversation ID
+POST {{baseUrl}}/api/follow-up
+Content-Type: {{contentType}}
+
+{
+    "followUpQuestion": "Can you explain more?"
+}
+
+### Invalid Conversation ID
+POST {{baseUrl}}/api/follow-up
+Content-Type: {{contentType}}
+
+{
+    "conversationId": "invalid_id",
+    "followUpQuestion": "Can you explain more?"
+}
